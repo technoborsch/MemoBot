@@ -1,15 +1,21 @@
+import logging
+
 from aiogram import Bot, types
 from aiogram.dispatcher import Dispatcher
-from aiogram.utils import executor
+from aiogram.contrib.middlewares.logging import LoggingMiddleware
+from aiogram.utils.executor import start_webhook
 from aiogram.types import ContentType
 import googlemaps
 from models import *
 import os
 
-from config import TOKEN, MAPS_KEY
+from config import (TOKEN, MAPS_KEY,
+                    WEBHOOK_URL, WEBHOOK_PATH,
+                    WEBAPP_HOST, WEBAPP_PORT)
 
 bot = Bot(TOKEN)
 dp = Dispatcher(bot)
+dp.middleware.setup(LoggingMiddleware())
 new_locations = dict()
 g_map = googlemaps.Client(MAPS_KEY)
 
@@ -49,11 +55,11 @@ async def process_stop_command(message: types.Message):
 @dp.message_handler(commands=["cancel"])
 async def process_cancel_command(message: types.Message):
     id_ = message.from_user.id
-    user = get_user(id_)
+    user_ = get_user(id_)
     new_locations[id_] = dict()
-    if user.step != 0:
-        user.step = 0
-        user.save()
+    if user_.step != 0:
+        user_.step = 0
+        user_.save()
         await message.reply("Ввод места отменен.")
 
 
@@ -182,8 +188,23 @@ def send_location(id_):
         os.remove(f"{id_}.jpg")
 
 
-if __name__ == '__main__':
-    try:
-        executor.start_polling(dp)
-    except KeyboardInterrupt:
-        exit(0)
+async def on_startup(dp_):
+    logging.warning(
+        'Starting connection. ')
+    await bot.set_webhook(WEBHOOK_URL, drop_pending_updates=True)
+
+
+async def on_shutdown(dp_):
+    logging.warning('Bye! Shutting down webhook connection')
+
+
+def main():
+    logging.basicConfig(level=logging.INFO)
+    start_webhook(
+        dispatcher=dp,
+        webhook_path=WEBHOOK_PATH,
+        skip_updates=True,
+        on_startup=on_startup,
+        host=WEBAPP_HOST,
+        port=WEBAPP_PORT,
+    )
