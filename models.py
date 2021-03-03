@@ -1,7 +1,20 @@
 import datetime
+import os
+from urllib.parse import urlparse
 from peewee import *
 
-db = SqliteDatabase("db", pragmas={'foreign_keys': 'on'})
+if os.environ.get("DATABASE_URL"):
+    DATABASE_URL = os.environ.get("DATABASE_URL")
+    dbase = urlparse(DATABASE_URL)
+    user = dbase.username
+    password = dbase.password
+    path = dbase.path[1:]
+    host = dbase.hostname
+    port = dbase.port
+    db = PostgresqlDatabase(path, user=user, password=password, host=host, port=port)
+else:
+    db = PostgresqlDatabase("memobot", user="postgres", password="BetteRlifE4uS", host="127.0.0.1", port="5432")
+
 today = datetime.date.today
 now = datetime.datetime.now
 
@@ -17,6 +30,9 @@ class User(BaseModel):
     tg_id = CharField(column_name="tg_id", unique=True)
     join_date = DateField(column_name="join_date")
     step = IntegerField(column_name="step", default=0)
+
+    class Meta:
+        db_table = 'users'
 
 
 class Location(BaseModel):
@@ -107,7 +123,7 @@ db.close()
 
 
 def main():
-    print(list(get_last_locations(1339992910)))
+    pass
 
 
 if __name__ == "__main__":
