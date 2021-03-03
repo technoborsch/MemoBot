@@ -1,19 +1,14 @@
 import datetime
-import os
-from urllib.parse import urlparse
+
 from peewee import *
 
-if os.environ.get("DATABASE_URL"):
-    DATABASE_URL = os.environ.get("DATABASE_URL")
-    dbase = urlparse(DATABASE_URL)
-    user = dbase.username
-    password = dbase.password
-    path = dbase.path[1:]
-    host = dbase.hostname
-    port = dbase.port
-    db = PostgresqlDatabase(path, user=user, password=password, host=host, port=port)
-else:
-    db = PostgresqlDatabase("memobot", user="postgres", password="BetteRlifE4uS", host="127.0.0.1", port="5432")
+db = PostgresqlDatabase(
+    "d3ba8nbebg4l5r",
+    user="cxdjlbdsffmzjs",
+    password="3ff88e1fb4b0783d796f561659d20ce7af3499abba886278c5e71bfd7402d9ec",
+    host="ec2-34-203-255-149.compute-1.amazonaws.com",
+    port="5432"
+)
 
 today = datetime.date.today
 now = datetime.datetime.now
