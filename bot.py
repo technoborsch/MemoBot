@@ -7,7 +7,7 @@ from aiogram.utils.executor import start_webhook
 from aiogram.types import ContentType
 import googlemaps
 from models import *
-import os
+from filters import Registered, Step
 
 from config import (TOKEN, MAPS_KEY,
                     WEBHOOK_URL, WEBHOOK_PATH,
@@ -36,7 +36,7 @@ async def process_start_command(message: types.Message):
         await message.reply("Я уже запущен!")
 
 
-@dp.message_handler(commands=["help"])
+@dp.message_handler(Registered, commands=["help"])
 async def process_help_command(message: types.Message):
     await message.reply("/add - добавить место\n"
                         "/list - список из 10 последних мест\n"
@@ -46,13 +46,13 @@ async def process_help_command(message: types.Message):
                         "/help - показать эту справку\n")
 
 
-@dp.message_handler(commands=["stop"])
+@dp.message_handler(Registered, commands=["stop"])
 async def process_stop_command(message: types.Message):
     delete_user(message.from_user.id)
     await message.reply("Пока!")
 
 
-@dp.message_handler(commands=["cancel"])
+@dp.message_handler(Registered, commands=["cancel"])
 async def process_cancel_command(message: types.Message):
     id_ = message.from_user.id
     user_ = get_user(id_)
@@ -63,14 +63,14 @@ async def process_cancel_command(message: types.Message):
         await message.reply("Ввод места отменен.")
 
 
-@dp.message_handler(commands=["add"])
+@dp.message_handler(Registered, commands=["add"])
 async def new_location(message: types.Message):
     id_ = message.from_user.id
     next_step(id_)
     await bot.send_message(id_, "Введи описание места:\n/cancel для отмены")
 
 
-@dp.message_handler(commands=["reset"])
+@dp.message_handler(Registered, commands=["reset"])
 async def delete_locations(message: types.Message):
     id_ = message.from_user.id
     if reset(id_):
@@ -79,14 +79,14 @@ async def delete_locations(message: types.Message):
         await bot.send_message(id_, "У вас нет сохраненных мест")
 
 
-@dp.message_handler(lambda m: get_step(m) == 2, commands=["skip"])
+@dp.message_handler(Registered, Step(2), commands=["skip"])
 async def skip_photo(message: types.Message):
     id_ = message.from_user.id
     next_step(id_)
     await get_photo(message)
 
 
-@dp.message_handler(lambda m: get_step(m) == 0, content_types=ContentType.LOCATION)
+@dp.message_handler(Registered, Step(0), content_types=ContentType.LOCATION)
 async def nearest_locations(message: types.Message):
     id_ = message.from_user.id
     locations = get_all_locations(id_)
@@ -95,10 +95,10 @@ async def nearest_locations(message: types.Message):
         origin = (message.location["latitude"], message.location["longitude"])
         data = googlemaps.client.distance_matrix(g_map, origin, loc_tuples)
         distances = [elem["distance"]["value"] for elem in data["rows"][0]["elements"]]
-        near_locs = [loc[1] for loc in enumerate(locations) if distances[loc[0]] < 500]
-        if near_locs:
+        near_locations = [loc[1] for loc in enumerate(locations) if distances[loc[0]] < 500]
+        if near_locations:
             await bot.send_message(id_, "Ближайшие локации:")
-            for location in near_locs:
+            for location in near_locations:
                 if location.pic:
                     await bot.send_photo(id_, location.pic, location.name)
                 else:
@@ -112,7 +112,7 @@ async def nearest_locations(message: types.Message):
                                     "\nЧтобы добавить место, используйте /add")
 
 
-@dp.message_handler(commands=["list"])
+@dp.message_handler(Registered, commands=["list"])
 async def list_of_locations(message: types.Message):
     id_ = message.from_user.id
     locations = get_last_locations(id_)
@@ -128,7 +128,7 @@ async def list_of_locations(message: types.Message):
         await bot.send_message(id_, "У вас нет сохраненных мест")
 
 
-@dp.message_handler(lambda m: get_step(m) == 1)
+@dp.message_handler(Registered, Step(1))
 async def get_description(message: types.Message):
     id_ = message.from_user.id
     if message.text:
@@ -142,7 +142,7 @@ async def get_description(message: types.Message):
                             "\n/cancel для отмены")
 
 
-@dp.message_handler(lambda m: get_step(m) == 2, content_types=ContentType.LOCATION)
+@dp.message_handler(Registered, Step(2), content_types=ContentType.LOCATION)
 async def get_location(message: types.Message):
     id_ = message.from_user.id
     next_step(id_)
@@ -152,14 +152,14 @@ async def get_location(message: types.Message):
                                 "\n/cancel для отмены")
 
 
-@dp.message_handler(lambda m: get_step(m) == 2)
+@dp.message_handler(Registered, Step(2))
 async def no_location(message: types.Message):
     id_ = message.from_user.id
     await bot.send_message(id_, "Отправь геопозицию (это обязательно):"
                                 "\n/cancel для отмены")
 
 
-@dp.message_handler(lambda m: get_step(m) == 3, content_types=[ContentType.ANY])
+@dp.message_handler(Registered, Step(3), content_types=[ContentType.ANY])
 async def get_photo(message: types.Message):
     id_ = message.from_user.id
     if message.photo:
@@ -188,13 +188,13 @@ def send_location(id_):
         os.remove(f"{id_}.jpg")
 
 
-async def on_startup(dp_):
+async def on_startup():
     logging.warning(
         'Starting connection. ')
     await bot.set_webhook(WEBHOOK_URL, drop_pending_updates=True)
 
 
-async def on_shutdown(dp_):
+async def on_shutdown():
     logging.warning('Bye! Shutting down webhook connection')
 
 

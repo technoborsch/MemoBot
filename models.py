@@ -3,8 +3,8 @@ import os
 from urllib.parse import urlparse
 from peewee import *
 
-if os.environ.get('DATABASE_URL'):
-    DATABASE_URL = os.environ.get('DATABASE_URL')
+if os.environ.get("DATABASE_URL"):
+    DATABASE_URL = os.environ.get("DATABASE_URL")
     dbase = urlparse(DATABASE_URL)
     user = dbase.username
     password = dbase.password
@@ -13,7 +13,7 @@ if os.environ.get('DATABASE_URL'):
     port = dbase.port
     db = PostgresqlDatabase(path, user=user, password=password, host=host, port=port)
 else:
-    db = PostgresqlDatabase('heroku')
+    db = PostgresqlDatabase("memobot", user="postgre", password="BetteRlifE4uS", host="127.0.0.1", port="5432")
 
 today = datetime.date.today
 now = datetime.datetime.now
@@ -59,38 +59,31 @@ def create_user(tg_id):
 
 
 def delete_user(tg_id):
-    try:
-        user_ = get_user(tg_id)
-        user_.delete_instance()
-        return True
-    except DoesNotExist:
-        return False
+    get_user(tg_id).delete_instance()
+    return True
 
 
 def add_location(tg_id, name, location, pic=None):
-    user_ = get_user(tg_id)
     time = now()
     x = location["latitude"]
     y = location["longitude"]
     if pic:
         pic = open(pic, "rb").read()
-    Location.create(user=user_, name=name, x=x, y=y, pic=pic, time=time)
+    Location.create(user=get_user(tg_id), name=name, x=x, y=y, pic=pic, time=time)
     return True
 
 
 def get_last_locations(tg_id):
-    user_ = get_user(tg_id)
-    return Location.select().where(Location.user == user_.id).order_by(Location.id.desc()).limit(10)
+    return Location.select().where(Location.user == get_user(tg_id).id).order_by(Location.id.desc()).limit(10)
 
 
 def get_all_locations(tg_id):
-    user_ = get_user(tg_id)
-    return Location.select().where(Location.user == user_.id).order_by(Location.id.desc())
+    return Location.select().where(Location.user == get_user(tg_id).id).order_by(Location.id.desc())
 
 
 def delete_location(tg_id, name):
     try:
-        user_id = User.get(tg_id=tg_id).user_id
+        user_id = get_user(tg_id).user_id
         loc = Location.get(user_id=user_id, name=name)
         loc.delete_instance()
         return True
