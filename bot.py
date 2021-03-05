@@ -23,7 +23,7 @@ g_map = googlemaps.Client(MAPS_KEY)
 @dp.message_handler(commands=["start"])
 async def process_start_command(message: types.Message):
     if not User.filter(tg_id=message.from_user.id):
-        create_user(message.from_user.id)
+        await create_user(message.from_user.id)
         await message.reply("Привет!"
                             "\nЯ сохраняю локации, чтобы не забыть про них. "
                             "\n/add, чтобы добавить место, "
@@ -48,25 +48,25 @@ async def process_help_command(message: types.Message):
 
 @dp.message_handler([Registered()], commands=["stop"])
 async def process_stop_command(message: types.Message):
-    delete_user(message.from_user.id)
+    await delete_user(message.from_user.id)
     await message.reply("Пока!")
 
 
 @dp.message_handler([Registered()], commands=["cancel"])
 async def process_cancel_command(message: types.Message):
     id_ = message.from_user.id
-    user_ = get_user(id_)
+    user_ = await get_user(id_)
     new_locations[id_] = dict()
     if user_.step != 0:
         user_.step = 0
-        user_.save()
+        await user_.save()
         await message.reply("Ввод места отменен.")
 
 
 @dp.message_handler([Registered()], commands=["add"])
 async def new_location(message: types.Message):
     id_ = message.from_user.id
-    next_step(id_)
+    await next_step(id_)
     await bot.send_message(id_, "Введи описание места:\n/cancel для отмены")
 
 
@@ -82,18 +82,18 @@ async def delete_locations(message: types.Message):
 @dp.message_handler([Registered(), Step(2)], commands=["skip"])
 async def skip_photo(message: types.Message):
     id_ = message.from_user.id
-    next_step(id_)
+    await next_step(id_)
     await get_photo(message)
 
 
 @dp.message_handler([Registered(), Step(0)], content_types=ContentType.LOCATION)
 async def nearest_locations(message: types.Message):
     id_ = message.from_user.id
-    locations = get_all_locations(id_)
+    locations = await get_all_locations(id_)
     if locations:
         loc_tuples = [(loc.x, loc.y) for loc in locations]
         origin = (message.location["latitude"], message.location["longitude"])
-        data = googlemaps.client.distance_matrix(g_map, origin, loc_tuples)
+        data = await googlemaps.client.distance_matrix(g_map, origin, loc_tuples)
         distances = [elem["distance"]["value"] for elem in data["rows"][0]["elements"]]
         near_locations = [loc[1] for loc in enumerate(locations) if distances[loc[0]] < 500]
         if near_locations:
@@ -115,7 +115,7 @@ async def nearest_locations(message: types.Message):
 @dp.message_handler([Registered()], commands=["list"])
 async def list_of_locations(message: types.Message):
     id_ = message.from_user.id
-    locations = get_last_locations(id_)
+    locations = await get_last_locations(id_)
     if locations:
         await bot.send_message(id_, "Ваши локации:")
         for location in locations:
@@ -132,7 +132,7 @@ async def list_of_locations(message: types.Message):
 async def get_description(message: types.Message):
     id_ = message.from_user.id
     if message.text:
-        next_step(id_)
+        await next_step(id_)
         new_locations[id_] = dict()
         new_locations[id_]["text"] = message.text
         await bot.send_message(id_, "Отлично! Теперь отправь локацию"
@@ -145,7 +145,7 @@ async def get_description(message: types.Message):
 @dp.message_handler([Registered(), Step(2)], content_types=ContentType.LOCATION)
 async def get_location(message: types.Message):
     id_ = message.from_user.id
-    next_step(id_)
+    await next_step(id_)
     new_locations[id_]["location"] = message.location
     await bot.send_message(id_, "Прикрепи фото (не обязательно):"
                                 "\n/skip - пропустить"
@@ -166,8 +166,8 @@ async def get_photo(message: types.Message):
         photo_path = f"{id_}.jpg"
         await message.photo[-1].download(photo_path)
         new_locations[id_]["photo"] = photo_path
-    send_location(id_)
-    user_ = get_user(id_)
+    await send_location(id_)
+    user_ = await get_user(id_)
     user_.step = 0
     user_.save()
     await bot.send_message(id_, "Место сохранено!")
@@ -178,11 +178,11 @@ async def default_message(message: types.Message):
     await bot.send_message(message.from_user.id, "/help для помощи")
 
 
-def send_location(id_):
+async def send_location(id_):
     name = new_locations[id_]["text"]
     loc = new_locations[id_]["location"]
     pic = new_locations[id_].get("photo")
-    add_location(id_, name, loc, pic)
+    await add_location(id_, name, loc, pic)
     new_locations[id_] = dict()
     if pic:
         os.remove(f"{id_}.jpg")
