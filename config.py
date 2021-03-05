@@ -21,6 +21,6 @@ WEBHOOK_URL = f'{WEBHOOK_HOST}{WEBHOOK_PATH}'
 WEBAPP_HOST = '0.0.0.0'
 port = os.getenv('PORT')
 if port:
-    WEBAPP_PORT = int(os.getenv('PORT'))
+    WEBAPP_PORT = port
 else:
     WEBAPP_PORT = None
