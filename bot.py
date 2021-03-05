@@ -36,7 +36,7 @@ async def process_start_command(message: types.Message):
         await message.reply("Я уже запущен!")
 
 
-@dp.message_handler(Registered, commands=["help"])
+@dp.message_handler(custom_filters=[Registered], commands=["help"])
 async def process_help_command(message: types.Message):
     await message.reply("/add - добавить место\n"
                         "/list - список из 10 последних мест\n"
@@ -46,13 +46,13 @@ async def process_help_command(message: types.Message):
                         "/help - показать эту справку\n")
 
 
-@dp.message_handler(Registered, commands=["stop"])
+@dp.message_handler(custom_filters=[Registered], commands=["stop"])
 async def process_stop_command(message: types.Message):
     delete_user(message.from_user.id)
     await message.reply("Пока!")
 
 
-@dp.message_handler(Registered, commands=["cancel"])
+@dp.message_handler(custom_filters=[Registered], commands=["cancel"])
 async def process_cancel_command(message: types.Message):
     id_ = message.from_user.id
     user_ = get_user(id_)
@@ -63,14 +63,14 @@ async def process_cancel_command(message: types.Message):
         await message.reply("Ввод места отменен.")
 
 
-@dp.message_handler(Registered, commands=["add"])
+@dp.message_handler(custom_filters=[Registered], commands=["add"])
 async def new_location(message: types.Message):
     id_ = message.from_user.id
     next_step(id_)
     await bot.send_message(id_, "Введи описание места:\n/cancel для отмены")
 
 
-@dp.message_handler(Registered, commands=["reset"])
+@dp.message_handler(custom_filters=[Registered], commands=["reset"])
 async def delete_locations(message: types.Message):
     id_ = message.from_user.id
     if reset(id_):
@@ -79,14 +79,14 @@ async def delete_locations(message: types.Message):
         await bot.send_message(id_, "У вас нет сохраненных мест")
 
 
-@dp.message_handler(Registered, Step(2), commands=["skip"])
+@dp.message_handler(custom_filters=[Registered, Step(2)], commands=["skip"])
 async def skip_photo(message: types.Message):
     id_ = message.from_user.id
     next_step(id_)
     await get_photo(message)
 
 
-@dp.message_handler(Registered, Step(0), content_types=ContentType.LOCATION)
+@dp.message_handler(custom_filters=[Registered, Step(0)], content_types=ContentType.LOCATION)
 async def nearest_locations(message: types.Message):
     id_ = message.from_user.id
     locations = get_all_locations(id_)
@@ -128,21 +128,21 @@ async def list_of_locations(message: types.Message):
         await bot.send_message(id_, "У вас нет сохраненных мест")
 
 
-@dp.message_handler(Registered, Step(1))
+@dp.message_handler(custom_filters=[Registered, Step(1)])
 async def get_description(message: types.Message):
     id_ = message.from_user.id
     if message.text:
         next_step(id_)
         new_locations[id_] = dict()
         new_locations[id_]["text"] = message.text
-        await bot.send_message(id_, "Отлично! Теперь отправь локацию"
+        await bot.send_message(id_, "Теперь отправь локацию"
                                     "\n/cancel для отмены")
     else:
         await message.reply("Пришли текстовое описание:"
                             "\n/cancel для отмены")
 
 
-@dp.message_handler(Registered, Step(2), content_types=ContentType.LOCATION)
+@dp.message_handler(custom_filters=[Registered, Step(2)], content_types=ContentType.LOCATION)
 async def get_location(message: types.Message):
     id_ = message.from_user.id
     next_step(id_)
@@ -152,14 +152,14 @@ async def get_location(message: types.Message):
                                 "\n/cancel для отмены")
 
 
-@dp.message_handler(Registered, Step(2))
+@dp.message_handler(custom_filters=[Registered, Step(2)])
 async def no_location(message: types.Message):
     id_ = message.from_user.id
     await bot.send_message(id_, "Отправь геопозицию (это обязательно):"
                                 "\n/cancel для отмены")
 
 
-@dp.message_handler(Registered, Step(3), content_types=[ContentType.ANY])
+@dp.message_handler(custom_filters=[Registered, Step(3)], content_types=[ContentType.ANY])
 async def get_photo(message: types.Message):
     id_ = message.from_user.id
     if message.photo:
