@@ -174,7 +174,7 @@ async def get_photo(message: types.Message):
     await bot.send_message(id_, "Место сохранено!")
 
 
-@dp.message_handler(Registered)
+@dp.message_handler(Registered())
 async def default_message(message: types.Message):
     await bot.send_message(message.from_user.id, "/help для помощи")
 
