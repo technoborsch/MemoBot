@@ -47,20 +47,20 @@ class Location(BaseModel):
 
 
 async def get_user(tg_id):
-    return await User.get(tg_id=tg_id)
+    return User.get_or_none(tg_id=tg_id)
 
 
 async def create_user(tg_id):
-    if not await User.filter(tg_id=tg_id):
+    if not User.filter(tg_id=tg_id):
         date = today()
-        await User.create(tg_id=tg_id, join_date=date)
+        User.create(tg_id=tg_id, join_date=date)
         return True
     return False
 
 
 async def delete_user(tg_id):
     user_ = await get_user(tg_id)
-    await user_.delete_instance
+    user_.delete_instance()
     return True
 
 
@@ -69,27 +69,27 @@ async def add_location(tg_id, name, location, pic=None):
     x = location["latitude"]
     y = location["longitude"]
     if pic:
-        async with open(pic, "rb") as f:
-            await Location.create(user=get_user(tg_id), name=name, x=x, y=y, pic=f.read(), time=time)
-    await Location.create(user=get_user(tg_id), name=name, x=x, y=y, pic=pic, time=time)
+        pic = open(pic, "rb").read()
+    user_ = await get_user(tg_id)
+    Location.create(user=user_, name=name, x=x, y=y, pic=pic, time=time)
     return True
 
 
 async def get_last_locations(tg_id):
     user_ = await get_user(tg_id)
-    return await Location.select().where(Location.user == user_.id).order_by(Location.id.desc()).limit(10)
+    return Location.select().where(Location.user == user_.id).order_by(Location.id.desc()).limit(10)
 
 
 async def get_all_locations(tg_id):
     user_ = await get_user(tg_id)
-    return await Location.select().where(Location.user == user_.id).order_by(Location.id.desc())
+    return Location.select().where(Location.user == user_.id).order_by(Location.id.desc())
 
 
 async def delete_location(tg_id, name):
     try:
         user_ = await get_user(tg_id)
-        loc = await Location.get(user_id=user_.user_id, name=name)
-        await loc.delete_instance()
+        loc = Location.get(user_id=user_.user_id, name=name)
+        loc.delete_instance()
         return True
     except DoesNotExist:
         return False
@@ -98,20 +98,20 @@ async def delete_location(tg_id, name):
 async def reset(tg_id):
     user_ = await get_user(tg_id)
     if len(user_.locations) > 0:
-        async for location in user_.locations:
-            await location.delete_instance()
+        for location in user_.locations:
+            location.delete_instance()
             return True
     return False
 
 
 async def get_step(msg):
-    return await User.get(tg_id=msg.from_user.id).step
+    return User.get(tg_id=msg.from_user.id).step
 
 
 async def next_step(id_):
-    usr = await User.get(tg_id=id_)
+    usr = User.get(tg_id=id_)
     usr.step += 1
-    await usr.save()
+    usr.save()
 
 
 db.connect()

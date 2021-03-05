@@ -4,6 +4,7 @@ from aiogram import Bot, types
 from aiogram.dispatcher import Dispatcher
 from aiogram.contrib.middlewares.logging import LoggingMiddleware
 from aiogram.utils.executor import start_webhook
+from aiogram.utils import executor
 from aiogram.types import ContentType
 import googlemaps
 from models import *
@@ -36,7 +37,7 @@ async def process_start_command(message: types.Message):
         await message.reply("Я уже запущен!")
 
 
-@dp.message_handler([Registered], commands=["help"])
+@dp.message_handler(Registered(), commands=["help"])
 async def process_help_command(message: types.Message):
     await message.reply("/add - добавить место\n"
                         "/list - список из 10 последних мест\n"
@@ -46,47 +47,47 @@ async def process_help_command(message: types.Message):
                         "/help - показать эту справку\n")
 
 
-@dp.message_handler([Registered], commands=["stop"])
+@dp.message_handler(Registered(), commands=["stop"])
 async def process_stop_command(message: types.Message):
     await delete_user(message.from_user.id)
     await message.reply("Пока!")
 
 
-@dp.message_handler([Registered], commands=["cancel"])
+@dp.message_handler(Registered(), commands=["cancel"])
 async def process_cancel_command(message: types.Message):
     id_ = message.from_user.id
     user_ = await get_user(id_)
     new_locations[id_] = dict()
     if user_.step != 0:
         user_.step = 0
-        await user_.save()
+        user_.save()
         await message.reply("Ввод места отменен.")
 
 
-@dp.message_handler([Registered], commands=["add"])
+@dp.message_handler(Registered(), commands=["add"])
 async def new_location(message: types.Message):
     id_ = message.from_user.id
     await next_step(id_)
     await bot.send_message(id_, "Введи описание места:\n/cancel для отмены")
 
 
-@dp.message_handler([Registered], commands=["reset"])
+@dp.message_handler(Registered(), commands=["reset"])
 async def delete_locations(message: types.Message):
     id_ = message.from_user.id
-    if reset(id_):
+    if await reset(id_):
         await bot.send_message(id_, "Все места удалены")
     else:
         await bot.send_message(id_, "У вас нет сохраненных мест")
 
 
-@dp.message_handler([Registered, Step(2)], commands=["skip"])
+@dp.message_handler(Registered(), Step(2), commands=["skip"])
 async def skip_photo(message: types.Message):
     id_ = message.from_user.id
     await next_step(id_)
     await get_photo(message)
 
 
-@dp.message_handler([Registered, Step(0)], content_types=ContentType.LOCATION)
+@dp.message_handler(Registered(), Step(0), content_types=ContentType.LOCATION)
 async def nearest_locations(message: types.Message):
     id_ = message.from_user.id
     locations = await get_all_locations(id_)
@@ -112,7 +113,7 @@ async def nearest_locations(message: types.Message):
                                     "\nЧтобы добавить место, используйте /add")
 
 
-@dp.message_handler([Registered], commands=["list"])
+@dp.message_handler(Registered(), commands=["list"])
 async def list_of_locations(message: types.Message):
     id_ = message.from_user.id
     locations = await get_last_locations(id_)
@@ -128,7 +129,7 @@ async def list_of_locations(message: types.Message):
         await bot.send_message(id_, "У вас нет сохраненных мест")
 
 
-@dp.message_handler([Registered, Step(1)])
+@dp.message_handler(Registered(), Step(1))
 async def get_description(message: types.Message):
     id_ = message.from_user.id
     if message.text:
@@ -142,7 +143,7 @@ async def get_description(message: types.Message):
                             "\n/cancel для отмены")
 
 
-@dp.message_handler([Registered, Step(2)], content_types=ContentType.LOCATION)
+@dp.message_handler(Registered(), Step(2), content_types=ContentType.LOCATION)
 async def get_location(message: types.Message):
     id_ = message.from_user.id
     await next_step(id_)
@@ -152,14 +153,14 @@ async def get_location(message: types.Message):
                                 "\n/cancel для отмены")
 
 
-@dp.message_handler([Registered, Step(2)])
+@dp.message_handler(Registered(), Step(2))
 async def no_location(message: types.Message):
     id_ = message.from_user.id
     await bot.send_message(id_, "Отправь геопозицию (это обязательно):"
                                 "\n/cancel для отмены")
 
 
-@dp.message_handler([Registered, Step(3)], content_types=[ContentType.ANY])
+@dp.message_handler(Registered(), Step(3), content_types=[ContentType.ANY])
 async def get_photo(message: types.Message):
     id_ = message.from_user.id
     if message.photo:
@@ -173,7 +174,7 @@ async def get_photo(message: types.Message):
     await bot.send_message(id_, "Место сохранено!")
 
 
-@dp.message_handler()
+@dp.message_handler(Registered)
 async def default_message(message: types.Message):
     await bot.send_message(message.from_user.id, "/help для помощи")
 
@@ -199,12 +200,22 @@ async def on_shutdown():
 
 
 def main():
-    logging.basicConfig(level=logging.INFO)
-    start_webhook(
-        dispatcher=dp,
-        webhook_path=WEBHOOK_PATH,
-        skip_updates=True,
-        on_startup=on_startup,
-        host=WEBAPP_HOST,
-        port=WEBAPP_PORT,
-    )
+    if os.environ.get("DATABASE_URL"):
+        logging.basicConfig(level=logging.INFO)
+        start_webhook(
+            dispatcher=dp,
+            webhook_path=WEBHOOK_PATH,
+            skip_updates=True,
+            on_startup=on_startup,
+            host=WEBAPP_HOST,
+            port=WEBAPP_PORT,
+        )
+    else:
+        try:
+            executor.start_polling(dp)
+        except KeyboardInterrupt:
+            exit(0)
+
+
+if __name__ == "__main__":
+    main()

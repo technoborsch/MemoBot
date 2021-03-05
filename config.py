@@ -3,13 +3,11 @@ import os
 
 TOKEN = os.getenv('TOKEN')
 if not TOKEN:
-    print('You have forgot to set BOT_TOKEN')
-    quit()
+    TOKEN = "1661220093:AAG6tVi2oIkVmSVqBE5mRILOINBgWwOatFk"
 
 MAPS_KEY = os.getenv('MAPS_KEY')
 if not MAPS_KEY:
-    print("No map key")
-    quit()
+    MAPS_KEY = "AIzaSyCHQTnatWz9-Mm5zTsZGEtjYDNTApZ0h5M"
 
 HEROKU_APP_NAME = os.getenv('HEROKU_APP_NAME')
 
@@ -21,4 +19,8 @@ WEBHOOK_URL = f'{WEBHOOK_HOST}{WEBHOOK_PATH}'
 
 # webserver settings
 WEBAPP_HOST = '0.0.0.0'
-WEBAPP_PORT = int(os.getenv('PORT'))
+port = os.getenv('PORT')
+if port:
+    WEBAPP_PORT = int(os.getenv('PORT'))
+else:
+    WEBAPP_PORT = None
