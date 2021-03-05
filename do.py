@@ -1,4 +1,4 @@
-''' Run a function by ado <func_name> '''
+""" Run a function by ado <func_name> """
 
 
 def set_hook():
