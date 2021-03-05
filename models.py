@@ -13,7 +13,7 @@ if os.environ.get("DATABASE_URL"):
     port = dbase.port
     db = PostgresqlDatabase(path, user=user, password=password, host=host, port=port)
 else:
-    db = PostgresqlDatabase("memobot", user="postgre", password="BetteRlifE4uS", host="127.0.0.1", port="5432")
+    db = PostgresqlDatabase("memobot", user="postgres", password="BetteRlifE4uS", host="127.0.0.1", port="5432")
 
 today = datetime.date.today
 now = datetime.datetime.now
