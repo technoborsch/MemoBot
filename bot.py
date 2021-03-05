@@ -79,14 +79,14 @@ async def delete_locations(message: types.Message):
         await bot.send_message(id_, "У вас нет сохраненных мест")
 
 
-@dp.message_handler([Registered], Step(2), commands=["skip"])
+@dp.message_handler([Registered, Step(2)], commands=["skip"])
 async def skip_photo(message: types.Message):
     id_ = message.from_user.id
     await next_step(id_)
     await get_photo(message)
 
 
-@dp.message_handler([Registered], Step(0), content_types=ContentType.LOCATION)
+@dp.message_handler([Registered, Step(0)], content_types=ContentType.LOCATION)
 async def nearest_locations(message: types.Message):
     id_ = message.from_user.id
     locations = await get_all_locations(id_)
