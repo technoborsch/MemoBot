@@ -189,14 +189,16 @@ async def send_location(id_):
         os.remove(f"{id_}.jpg")
 
 
-async def on_startup():
-    logging.warning(
-        'Starting connection. ')
-    await bot.set_webhook(WEBHOOK_URL, drop_pending_updates=True)
+async def on_startup(dp_):
+    await bot.set_webhook(WEBHOOK_URL)
 
 
-async def on_shutdown():
-    logging.warning('Bye! Shutting down webhook connection')
+async def on_shutdown(dp_):
+    logging.warning('Shutting down..')
+
+    await bot.delete_webhook()
+
+    logging.warning('Bye!')
 
 
 def main():
