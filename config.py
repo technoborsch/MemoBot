@@ -1,13 +1,14 @@
 import os
+from supersecret import MY_MAPS, MY_TOKEN
 
 
 TOKEN = os.getenv('TOKEN')
 if not TOKEN:
-    TOKEN = "1661220093:AAG6tVi2oIkVmSVqBE5mRILOINBgWwOatFk"
+    TOKEN = MY_TOKEN
 
 MAPS_KEY = os.getenv('MAPS_KEY')
 if not MAPS_KEY:
-    MAPS_KEY = "AIzaSyCHQTnatWz9-Mm5zTsZGEtjYDNTApZ0h5M"
+    MAPS_KEY = MY_MAPS
 
 HEROKU_APP_NAME = os.getenv('HEROKU_APP_NAME')
 
