@@ -146,7 +146,7 @@ async def get_description(message: types.Message):
                                 "\n/cancel для отмены")
 
 
-@dp.message_handler(Registered(), Step(1))
+@dp.message_handler(Registered(), Step(1), content_types=ContentType.ANY)
 async def no_description(message: types.Message):
     await message.reply("Пришли текстовое описание:"
                         "\n/cancel для отмены")
@@ -162,14 +162,14 @@ async def get_location(message: types.Message):
                                 "\n/cancel для отмены")
 
 
-@dp.message_handler(Registered(), Step(2))
+@dp.message_handler(Registered(), Step(2), content_types=ContentType.ANY)
 async def no_location(message: types.Message):
     id_ = message.from_user.id
     await bot.send_message(id_, "Отправь геопозицию (это обязательно):"
                                 "\n/cancel для отмены")
 
 
-@dp.message_handler(Registered(), Step(3))
+@dp.message_handler(Registered(), Step(3), content_types=(ContentType.TEXT, ContentType.PHOTO))
 async def get_photo(message: types.Message):
     id_ = message.from_user.id
     if message.photo:
@@ -180,7 +180,8 @@ async def get_photo(message: types.Message):
     user_ = await get_user(id_)
     user_.step = 0
     user_.save()
-    await bot.send_message(id_, "Место сохранено!")
+    await bot.send_message(id_, "Место сохранено!"
+                                "\n/add - добавить еще одно место")
 
 
 @dp.message_handler(Registered())
